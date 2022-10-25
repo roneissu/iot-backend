@@ -13,6 +13,11 @@ device_model = api.model('DeviceModel', {
     'device_type': fields.Integer
 })
 
+command_model = api.model('CommandModel', {
+    'type': fields.String,
+    'value': fields.String
+})
+
 @api.route('/', methods=["GET", "POST"])
 class DeviceView(Resource):
     def get(self):
@@ -103,6 +108,10 @@ class DeviceIdView(Resource):
 
 @api_command.route('/<int:id>', methods=["POST"])
 class DeviceCommandView(Resource):
+    @api.expect(command_model)
     def post(self, id):
         device = Device.query.filter_by(id=id).first()
-        return f'Command sended to {device.alias_name}'
+        return jsonify({
+            'result': True,
+            'message': f'Command {request.json["type"]}: {request.json["value"]} sended to {device.alias_name}'
+        })
