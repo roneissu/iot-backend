@@ -51,9 +51,9 @@ class User(db.Model):
 
 class Device(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    serie_number = db.Column(db.String(15), unique=True, nullable=False)
-    alias_name = db.Column(db.String(15), nullable=False)
-    firmware_version = db.Column(db.String(15), nullable=False)
+    alias_name = db.Column(db.String(50), nullable=False)
+    serie_number = db.Column(db.String(50), unique=True, nullable=False)
+    firmware_version = db.Column(db.String(20))
     device_type = db.Column(db.Integer, db.ForeignKey('device_type.id'))
 
     def columns(self):
