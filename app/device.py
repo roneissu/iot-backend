@@ -3,22 +3,25 @@ from flask_restx import Namespace, Resource, fields
 from app.database import db, Device, DeviceType, users_devices, User
 
 
-api = Namespace('device', description='Device CRUD')
-api_command = Namespace('device/command', description='Device CRUD command')
+api = Namespace("device", description="Device CRUD")
+api_command = Namespace("device/command", description="Device CRUD command")
 
-device_model = api.model('DeviceModel', {
-    'serie_number': fields.String,
-    'alias_name': fields.String,
-    'firmware_version': fields.String,
-    'device_type': fields.Integer
-})
+device_model = api.model(
+    "DeviceModel",
+    {
+        "serie_number": fields.String,
+        "alias_name": fields.String,
+        "firmware_version": fields.String,
+        "device_type": fields.Integer,
+    },
+)
 
-command_model = api.model('CommandModel', {
-    'type': fields.String,
-    'value': fields.String
-})
+command_model = api.model(
+    "CommandModel", {"type": fields.String, "value": fields.String}
+)
 
-@api.route('/', methods=["GET", "POST"])
+
+@api.route("/", methods=["GET", "POST"])
 class DeviceView(Resource):
     def get(self):
         devices = Device.query.all()
@@ -27,13 +30,15 @@ class DeviceView(Resource):
             device_type = DeviceType()
             if (device.device_type is not None) and device.device_type > 0:
                 device_type = DeviceType.query.filter_by(id=device.device_type).first()
-            res.append({
-                'id': device.id,
-                'serie_number': device.serie_number,
-                'alias_name': device.alias_name,
-                'firmware_version': device.firmware_version,
-                'device_type': device.device_type
-            })
+            res.append(
+                {
+                    "id": device.id,
+                    "serie_number": device.serie_number,
+                    "alias_name": device.alias_name,
+                    "firmware_version": device.firmware_version,
+                    "device_type": device.device_type,
+                }
+            )
         return jsonify(res)
 
     @api.expect(device_model)
@@ -41,28 +46,29 @@ class DeviceView(Resource):
         user = User.query.first()
         device = Device()
         for param in device.columns():
-            if param != 'id':
+            if param != "id":
                 setattr(device, param, request.json[param])
         db.session.add(device)
         db.session.commit()
         db.session.execute(
-            users_devices.insert(),
-            params={'user_id': user.id, 'device_id': device.id}
+            users_devices.insert(), params={"user_id": user.id, "device_id": device.id}
         )
         db.session.commit()
         device_type = DeviceType()
         if (device.device_type is not None) and device.device_type > 0:
             device_type = DeviceType.query.filter_by(id=device.device_type).first()
-        return jsonify({
-            'id': device.id,
-            'serie_number': device.serie_number,
-            'alias_name': device.alias_name,
-            'firmware_version': device.firmware_version,
-            'device_type': device.device_type
-        })
+        return jsonify(
+            {
+                "id": device.id,
+                "serie_number": device.serie_number,
+                "alias_name": device.alias_name,
+                "firmware_version": device.firmware_version,
+                "device_type": device.device_type,
+            }
+        )
 
 
-@api.route('/<int:id>', methods=["GET", "PATCH", "DELETE"])
+@api.route("/<int:id>", methods=["GET", "PATCH", "DELETE"])
 class DeviceIdView(Resource):
     def get(self, id):
         device = Device.query.filter_by(id=id).first()
@@ -72,11 +78,11 @@ class DeviceIdView(Resource):
         if (device.device_type is not None) and device.device_type > 0:
             device_type = DeviceType.query.filter_by(id=device.device_type).first()
         res = {
-            'id': device.id,
-            'serie_number': device.serie_number,
-            'alias_name': device.alias_name,
-            'firmware_version': device.firmware_version,
-            'device_type': device.device_type
+            "id": device.id,
+            "serie_number": device.serie_number,
+            "alias_name": device.alias_name,
+            "firmware_version": device.firmware_version,
+            "device_type": device.device_type,
         }
         return jsonify(res)
 
@@ -91,27 +97,31 @@ class DeviceIdView(Resource):
         device_type = DeviceType()
         if (device.device_type is not None) and device.device_type > 0:
             device_type = DeviceType.query.filter_by(id=device.device_type).first()
-        return jsonify({
-            'id': device.id,
-            'serie_number': device.serie_number,
-            'alias_name': device.alias_name,
-            'firmware_version': device.firmware_version,
-            'device_type': device.device_type
-        })
+        return jsonify(
+            {
+                "id": device.id,
+                "serie_number": device.serie_number,
+                "alias_name": device.alias_name,
+                "firmware_version": device.firmware_version,
+                "device_type": device.device_type,
+            }
+        )
 
     def delete(self, id):
-        device = db.session.query(Device).filter(Device.id==id).first()
+        device = db.session.query(Device).filter(Device.id == id).first()
         db.session.delete(device)
         db.session.commit()
         return
 
 
-@api_command.route('/<int:id>', methods=["POST"])
+@api_command.route("/<int:id>", methods=["POST"])
 class DeviceCommandView(Resource):
     @api.expect(command_model)
     def post(self, id):
         device = Device.query.filter_by(id=id).first()
-        return jsonify({
-            'result': True,
-            'message': f'Command {request.json["type"]}: {request.json["value"]} sended to {device.alias_name}'
-        })
+        return jsonify(
+            {
+                "result": True,
+                "message": f'Command {request.json["type"]}: {request.json["value"]} sended to {device.alias_name}',
+            }
+        )
