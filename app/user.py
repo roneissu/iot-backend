@@ -1,21 +1,22 @@
+# pyright: reportOptionalSubscript=false
 from flask import abort, jsonify, request
 from flask_restx import Namespace, Resource, fields
 from app.database import db, User
-from app.device import device_model
+from flask_jwt_extended import jwt_required
 
 
 api = Namespace('user', description='User CRUD')
 
 user_model = api.model('UserModel', {
-    'username': fields.String,
-    'password': fields.String,
     'name': fields.String,
     'email': fields.String,
-    'date_nasc': fields.Date
+    'picture': fields.String
 })
 
 @api.route('/', methods=["GET", "POST"])
 class UserView(Resource):
+    @api.doc(security="Bearer")
+    @jwt_required()
     def get(self):
         users = User.query.paginate(1, 10).items
         res = []
@@ -30,16 +31,16 @@ class UserView(Resource):
                 })
             res = {
                 'id': user.id,
-                'username': user.username,
-                'password': user.password,
                 'name': user.name,
                 'email': user.email,
-                'date_nasc': user.date_nasc,
+                'picture': user.picture,
                 'devices': devices
             }
         return jsonify(res)
 
     @api.expect(user_model)
+    @api.doc(security="Bearer")
+    @jwt_required()
     def post(self):
         user = User()
         for param in user.columns():
@@ -49,16 +50,16 @@ class UserView(Resource):
         db.session.commit()
         return jsonify({
             'id': user.id,
-            'username': user.username,
-            'password': user.password,
             'name': user.name,
             'email': user.email,
-            'date_nasc': user.date_nasc
+            'picture': user.picture
         })
 
 
 @api.route('/<int:id>', methods=["GET", "PATCH", "DELETE"])
 class UserIdView(Resource):
+    @api.doc(security="Bearer")
+    @jwt_required()
     def get(self, id):
         user = User.query.filter_by(id=id).first()
         if not user:
@@ -73,16 +74,16 @@ class UserIdView(Resource):
             })
         res = {
             'id': user.id,
-            'username': user.username,
-            'password': user.password,
             'name': user.name,
             'email': user.email,
-            'date_nasc': user.date_nasc,
+            'picture': user.picture,
             'devices': devices
         }
         return jsonify(res)
 
     @api.expect(user_model)
+    @api.doc(security="Bearer")
+    @jwt_required()
     def patch(self, id):
         user = User.query.filter_by(id=id).first()
         for param in user.columns():
@@ -90,23 +91,32 @@ class UserIdView(Resource):
                 setattr(user, param, request.json[param])
         db.session.add(user)
         db.session.commit()
+        devices = []
+        for device in user.devices:
+            devices.append({
+                'id': device.id,
+                'serie_number': device.serie_number,
+                'alias_name': device.alias_name,
+                'firmware_version': device.firmware_version
+            })
         return jsonify({
             'id': user.id,
-            'username': user.username,
-            'password': user.password,
             'name': user.name,
             'email': user.email,
-            'date_nasc': user.date_nasc
+            'picture': user.picture,
+            'devices': devices
         })
 
+    @api.doc(security="Bearer")
+    @jwt_required()
     def delete(self, id):
         user = db.session.query(User).filter(User.id==id).first()
         db.session.delete(user)
         db.session.commit()
         return
     
-    def user_by_username(username):
+    def user_by_email(self, email):
         try:
-            return User.query.filter(User.username == username).one()
+            return User.query.filter(User.email == email).first()
         except:
             return None

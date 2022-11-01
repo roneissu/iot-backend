@@ -1,3 +1,5 @@
+# type: ignore
+from enum import unique
 from app import app, db_configs
 from flask_sqlalchemy import SQLAlchemy
 
@@ -34,11 +36,9 @@ users_devices = db.Table(
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(50))
-    password = db.Column(db.String(50))
+    email = db.Column(db.String(100), unique=True)
     name = db.Column(db.String(100))
-    email = db.Column(db.String(100))
-    date_nasc = db.Column(db.Date())
+    picture = db.Column(db.String(100))
     devices = db.relationship(
         "Device",
         secondary=users_devices,

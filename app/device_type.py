@@ -1,6 +1,8 @@
+# pyright: reportOptionalSubscript=false
 from flask import abort, jsonify, request
 from flask_restx import Namespace, Resource, fields
 from app.database import db, DeviceType, DeviceAction, DeviceField
+from flask_jwt_extended import jwt_required
 
 
 api = Namespace("device_type", description="Device Type CRUD")
@@ -39,6 +41,8 @@ device_type_model = api.model(
 
 @api.route("/", methods=["GET", "POST"])
 class DeviceTypeView(Resource):
+    @api.doc(security="Bearer")
+    @jwt_required()
     def get(self):
         device_types = DeviceType.query.all()
         res = []
@@ -57,6 +61,8 @@ class DeviceTypeView(Resource):
         return jsonify(res)
 
     @api.expect(device_type_model)
+    @api.doc(security="Bearer")
+    @jwt_required()
     def post(self):
         device_type = DeviceType()
         for param in device_type.columns():
@@ -79,6 +85,8 @@ class DeviceTypeView(Resource):
 
 @api.route("/<int:id>", methods=["GET", "PATCH", "DELETE"])
 class DeviceTypeIdView(Resource):
+    @api.doc(security="Bearer")
+    @jwt_required()
     def get(self, id):
         device_type = DeviceType.query.filter_by(id=id).first()
         if not device_type:
@@ -96,6 +104,8 @@ class DeviceTypeIdView(Resource):
         )
 
     @api.expect(device_type_model)
+    @api.doc(security="Bearer")
+    @jwt_required()
     def patch(self, id):
         device_type = DeviceType.query.filter_by(id=id).first()
         for param in device_type.columns():
@@ -115,6 +125,8 @@ class DeviceTypeIdView(Resource):
             }
         )
 
+    @api.doc(security="Bearer")
+    @jwt_required()
     def delete(self, id):
         device_type = db.session.query(DeviceType).filter(DeviceType.id == id).first()
         db.session.delete(device_type)
@@ -125,6 +137,8 @@ class DeviceTypeIdView(Resource):
 @api_action.route("/", methods=["POST"])
 class DeviceTypeActionView(Resource):
     @api_action.expect(device_action_model)
+    @api.doc(security="Bearer")
+    @jwt_required()
     def post(self):
         device_action = DeviceAction()
         for param in device_action.columns():
@@ -144,6 +158,8 @@ class DeviceTypeActionView(Resource):
 
 @api_action.route("/<int:id>", methods=["GET", "PATCH", "DELETE"])
 class DeviceTypeActionIdView(Resource):
+    @api.doc(security="Bearer")
+    @jwt_required()
     def get(self, id):
         device_action = DeviceAction.query.filter_by(id=id).first()
         if not device_action:
@@ -158,6 +174,8 @@ class DeviceTypeActionIdView(Resource):
         )
 
     @api_action.expect(device_action_model)
+    @api.doc(security="Bearer")
+    @jwt_required()
     def patch(self, id):
         device_action = DeviceAction.query.filter_by(id=id).first()
         for param in device_action.columns():
@@ -174,6 +192,8 @@ class DeviceTypeActionIdView(Resource):
             }
         )
 
+    @api.doc(security="Bearer")
+    @jwt_required()
     def delete(self, id):
         device_action = (
             db.session.query(DeviceAction).filter(DeviceAction.id == id).first()
@@ -186,6 +206,8 @@ class DeviceTypeActionIdView(Resource):
 @api_field.route("/", methods=["POST"])
 class DeviceTypeFieldView(Resource):
     @api_field.expect(device_field_model)
+    @api.doc(security="Bearer")
+    @jwt_required()
     def post(self):
         device_field = DeviceField()
         for param in device_field.columns():
@@ -205,6 +227,8 @@ class DeviceTypeFieldView(Resource):
 
 @api_field.route("/<int:id>", methods=["GET", "PATCH", "DELETE"])
 class DeviceTypeFieldIdView(Resource):
+    @api.doc(security="Bearer")
+    @jwt_required()
     def get(self, id):
         device_field = DeviceField.query.filter_by(id=id).first()
         if not device_field:
@@ -219,6 +243,8 @@ class DeviceTypeFieldIdView(Resource):
         )
 
     @api_field.expect(device_field_model)
+    @api.doc(security="Bearer")
+    @jwt_required()
     def patch(self, id):
         device_field = DeviceField.query.filter_by(id=id).first()
         for param in device_field.columns():
@@ -235,6 +261,8 @@ class DeviceTypeFieldIdView(Resource):
             }
         )
 
+    @api.doc(security="Bearer")
+    @jwt_required()
     def delete(self, id):
         device_field = (
             db.session.query(DeviceField).filter(DeviceField.id == id).first()

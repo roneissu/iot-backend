@@ -1,6 +1,8 @@
+# pyright: reportOptionalSubscript=false
 from flask import abort, jsonify, request
 from flask_restx import Namespace, Resource, fields
-from app.database import db, Device, DeviceType, users_devices, User
+from app.database import db, Device, users_devices, User
+from flask_jwt_extended import jwt_required
 
 
 api = Namespace("device", description="Device CRUD")
@@ -13,6 +15,7 @@ device_model = api.model(
         "alias_name": fields.String,
         "firmware_version": fields.String,
         "device_type": fields.Integer,
+        "user_id": fields.Integer
     },
 )
 
@@ -23,13 +26,12 @@ command_model = api.model(
 
 @api.route("/", methods=["GET", "POST"])
 class DeviceView(Resource):
+    @api.doc(security="Bearer")
+    @jwt_required()
     def get(self):
         devices = Device.query.all()
         res = []
         for device in devices:
-            device_type = DeviceType()
-            if (device.device_type is not None) and device.device_type > 0:
-                device_type = DeviceType.query.filter_by(id=device.device_type).first()
             res.append(
                 {
                     "id": device.id,
@@ -42,11 +44,13 @@ class DeviceView(Resource):
         return jsonify(res)
 
     @api.expect(device_model)
+    @api.doc(security="Bearer")
+    @jwt_required()
     def post(self):
-        user = User.query.first()
+        user = User.query.filter(User.id == request.json["user_id"]).first()
         device = Device()
         for param in device.columns():
-            if param != "id":
+            if param != "id" and param != "user_id":
                 setattr(device, param, request.json[param])
         db.session.add(device)
         db.session.commit()
@@ -54,9 +58,6 @@ class DeviceView(Resource):
             users_devices.insert(), params={"user_id": user.id, "device_id": device.id}
         )
         db.session.commit()
-        device_type = DeviceType()
-        if (device.device_type is not None) and device.device_type > 0:
-            device_type = DeviceType.query.filter_by(id=device.device_type).first()
         return jsonify(
             {
                 "id": device.id,
@@ -70,13 +71,12 @@ class DeviceView(Resource):
 
 @api.route("/<int:id>", methods=["GET", "PATCH", "DELETE"])
 class DeviceIdView(Resource):
+    @api.doc(security="Bearer")
+    @jwt_required()
     def get(self, id):
         device = Device.query.filter_by(id=id).first()
         if not device:
             abort(404)
-        device_type = DeviceType()
-        if (device.device_type is not None) and device.device_type > 0:
-            device_type = DeviceType.query.filter_by(id=device.device_type).first()
         res = {
             "id": device.id,
             "serie_number": device.serie_number,
@@ -87,6 +87,8 @@ class DeviceIdView(Resource):
         return jsonify(res)
 
     @api.expect(device_model)
+    @api.doc(security="Bearer")
+    @jwt_required()
     def patch(self, id):
         device = Device.query.filter_by(id=id).first()
         for param in device.columns():
@@ -94,9 +96,6 @@ class DeviceIdView(Resource):
                 setattr(device, param, request.json[param])
         db.session.add(device)
         db.session.commit()
-        device_type = DeviceType()
-        if (device.device_type is not None) and device.device_type > 0:
-            device_type = DeviceType.query.filter_by(id=device.device_type).first()
         return jsonify(
             {
                 "id": device.id,
@@ -107,6 +106,8 @@ class DeviceIdView(Resource):
             }
         )
 
+    @api.doc(security="Bearer")
+    @jwt_required()
     def delete(self, id):
         device = db.session.query(Device).filter(Device.id == id).first()
         db.session.delete(device)
@@ -116,6 +117,8 @@ class DeviceIdView(Resource):
 
 @api_command.route("/<int:id>", methods=["POST"])
 class DeviceCommandView(Resource):
+    @api.doc(security="Bearer")
+    @jwt_required()
     @api.expect(command_model)
     def post(self, id):
         device = Device.query.filter_by(id=id).first()
