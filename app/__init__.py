@@ -1,6 +1,7 @@
-import os
+from os import environ, urandom
 from flask import Flask
 from flask_cors import CORS
+from flask_mqtt import Mqtt
 from flask_restx import Api
 from werkzeug.middleware.proxy_fix import ProxyFix
 from flask_jwt_extended import JWTManager
@@ -10,14 +11,21 @@ CORS(app, resources={r"*": {"origins": "*"}})
 app.wsgi_app = ProxyFix(app.wsgi_app)
 app.config["JSON_AS_ASCII"] = False
 app.config["SWAGGER_UI_DOC_EXPANSION"] = "list"
-app.secret_key = os.environ.get("SECRET_KEY") or os.urandom(24)
-app.config["JWT_PUBLIC_KEY"] = os.environ.get("SECRET_KEY") or os.urandom(24)
-app.config["JWT_SECRET_KEY"] = os.environ.get("SECRET_KEY") or os.urandom(24)
+app.secret_key = environ.get("SECRET_KEY") or urandom(24)
+app.config["JWT_PUBLIC_KEY"] = environ.get("SECRET_KEY") or urandom(24)
+app.config["JWT_SECRET_KEY"] = environ.get("SECRET_KEY") or urandom(24)
 app.config["JWT_TOKEN_LOCATION"] = ["headers"]
 
 authorizations = {"Bearer": {"type": "apiKey", "in": "header", "name": "Authorization"}}
 
+app.config["MQTT_BROKER_URL"] = environ.get("BROKER_URL") or 'localhost'
+app.config["MQTT_BROKER_PORT"] = int(environ.get("BROKER_PORT") or 1883)
+app.config["MQTT_TLS_ENABLED"] = (environ.get("BROKER_TLS_ENABLED") == True) or False
+app.config["MQTT_KEEPALIVE"] = 5
+
 jwt = JWTManager(app)
+
+mqtt_client = Mqtt(app)
 
 api = Api(
     app,
@@ -33,6 +41,7 @@ from app.device import api as device_ns, api_command as command_ns
 from app.device_type import (
     api as device_type_ns,
     api_action as device_action_ns,
+    api_action_param as device_action_param_ns,
     api_field as device_field_ns,
 )
 from app.config import api as config_ns
@@ -43,6 +52,7 @@ api.add_namespace(device_ns)
 api.add_namespace(command_ns)
 api.add_namespace(device_type_ns)
 api.add_namespace(device_action_ns)
+api.add_namespace(device_action_param_ns)
 api.add_namespace(device_field_ns)
 api.add_namespace(config_ns)
 api.add_namespace(user_ns)

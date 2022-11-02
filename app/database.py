@@ -1,5 +1,4 @@
 # type: ignore
-from enum import unique
 from app import app, db_configs
 from flask_sqlalchemy import SQLAlchemy
 
@@ -71,7 +70,7 @@ class Device(db.Model):
         }
 
     def __repr__(self):
-        return "<Device %r>" % self.username
+        return "<Device %r>" % self.id
 
 
 class DeviceType(db.Model):
@@ -85,7 +84,7 @@ class DeviceType(db.Model):
         }
 
     def __repr__(self):
-        return "<DeviceType %r>" % self.username
+        return "<DeviceType %r>" % self.id
 
 
 class DeviceField(db.Model):
@@ -101,7 +100,7 @@ class DeviceField(db.Model):
         }
 
     def __repr__(self):
-        return "<DeviceField %r>" % self.username
+        return "<DeviceField %r>" % self.id
 
 
 class DeviceAction(db.Model):
@@ -118,6 +117,29 @@ class DeviceAction(db.Model):
 
     def __repr__(self):
         return "<DeviceAction %r>" % self.username
+
+
+# string = 0
+# int = 1
+# float = 2
+# bool = 3
+# date = 4
+# time = 5
+class DeviceActionParam(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50), nullable=False)
+    param_type = db.Column(db.Integer, nullable=False)
+    order = db.Column(db.Integer, nullable=False)
+    action = db.Column(db.Integer, db.ForeignKey("device_action.id"), nullable=False)
+
+    def columns(self):
+        return {
+            column.name: getattr(self, column.name, None)
+            for column in self.__table__.columns
+        }
+
+    def __repr__(self):
+        return "<DeviceActionParam %r>" % self.id
 
 
 class Config(db.Model):

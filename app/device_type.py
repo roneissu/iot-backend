@@ -1,13 +1,25 @@
 # pyright: reportOptionalSubscript=false
 from flask import abort, jsonify, request
 from flask_restx import Namespace, Resource, fields
-from app.database import db, DeviceType, DeviceAction, DeviceField
+from app.database import db, DeviceType, DeviceAction, DeviceActionParam, DeviceField
 from flask_jwt_extended import jwt_required
 
 
 api = Namespace("device_type", description="Device Type CRUD")
+api_action_param = Namespace("device_type/action/param", description="Device Type Action Param CRUD")
 api_action = Namespace("device_type/action", description="Device Type Action CRUD")
 api_field = Namespace("device_type/field", description="Device Type Field CRUD")
+
+device_action_param_model = api.model(
+    "DeviceActionParamModel",
+    {
+        "id": fields.Integer,
+        "name": fields.String,
+        "param_type": fields.Integer,
+        "order": fields.Integer,
+        "action": fields.Integer,
+    },
+)
 
 device_action_model = api.model(
     "DeviceActionModel",
@@ -15,6 +27,7 @@ device_action_model = api.model(
         "id": fields.Integer,
         "name": fields.String,
         "action_type": fields.String,
+        "params": fields.List(fields.Nested(device_action_param_model)),
         "device_type": fields.Integer,
     },
 )
@@ -146,12 +159,16 @@ class DeviceTypeActionView(Resource):
                 setattr(device_action, param, request.json[param])
         db.session.add(device_action)
         db.session.commit()
+        action_params = DeviceTypeUtils().getActionParamsFields(
+            device_action.id
+        )
         return jsonify(
             {
                 "id": device_action.id,
                 "name": device_action.name,
                 "action_type": device_action.action_type,
                 "device_type": device_action.device_type,
+                "params": action_params,
             }
         )
 
@@ -164,12 +181,16 @@ class DeviceTypeActionIdView(Resource):
         device_action = DeviceAction.query.filter_by(id=id).first()
         if not device_action:
             abort(404)
+        action_params = DeviceTypeUtils().getActionParamsFields(
+            device_action.id
+        )
         return jsonify(
             {
                 "id": device_action.id,
                 "name": device_action.name,
                 "action_type": device_action.action_type,
                 "device_type": device_action.device_type,
+                "params": action_params,
             }
         )
 
@@ -183,12 +204,16 @@ class DeviceTypeActionIdView(Resource):
                 setattr(device_action, param, request.json[param])
         db.session.add(device_action)
         db.session.commit()
+        action_params = DeviceTypeUtils().getActionParamsFields(
+            device_action.id
+        )
         return jsonify(
             {
                 "id": device_action.id,
                 "name": device_action.name,
                 "action_type": device_action.action_type,
                 "device_type": device_action.device_type,
+                "params": action_params,
             }
         )
 
@@ -199,6 +224,78 @@ class DeviceTypeActionIdView(Resource):
             db.session.query(DeviceAction).filter(DeviceAction.id == id).first()
         )
         db.session.delete(device_action)
+        db.session.commit()
+        return
+
+
+@api_action_param.route("/", methods=["POST"])
+class DeviceTypeActionParamView(Resource):
+    @api_action_param.expect(device_action_param_model)
+    @api.doc(security="Bearer")
+    @jwt_required()
+    def post(self):
+        action_param = DeviceActionParam()
+        for param in action_param.columns():
+            if param != "id":
+                setattr(action_param, param, request.json[param])
+        db.session.add(action_param)
+        db.session.commit()
+        return jsonify(
+            {
+                "id": action_param.id,
+                "name": action_param.name,
+                "param_type": action_param.param_type,
+                "order": action_param.order,
+                "action": action_param.action,
+            }
+        )
+
+
+@api_action_param.route("/<int:id>", methods=["GET", "PATCH", "DELETE"])
+class DeviceTypeActionParamIdView(Resource):
+    @api.doc(security="Bearer")
+    @jwt_required()
+    def get(self, id):
+        action_param = DeviceActionParam.query.filter_by(id=id).first()
+        if not action_param:
+            abort(404)
+        return jsonify(
+            {
+                "id": action_param.id,
+                "name": action_param.name,
+                "param_type": action_param.param_type,
+                "order": action_param.order,
+                "action": action_param.action,
+            }
+        )
+
+    @api_action_param.expect(device_action_param_model)
+    @api.doc(security="Bearer")
+    @jwt_required()
+    def patch(self, id):
+        action_param = DeviceActionParam.query.filter_by(id=id).first()
+        for param in action_param.columns():
+            if param in request.json:
+                setattr(action_param, param, request.json[param])
+        db.session.add(action_param)
+        db.session.commit()
+        return jsonify(
+            {
+                "id": action_param.id,
+                "name": action_param.name,
+                "param_type": action_param.param_type,
+                "order": action_param.order,
+                "action": action_param.action,
+            }
+        )
+
+    @api.doc(security="Bearer")
+    @jwt_required()
+    def delete(self, id):
+        action_param = (
+            db.session.query(DeviceActionParam).filter(DeviceActionParam.id == id).first()
+        )
+        db.session.delete(action_param)
         db.session.commit()
         return
 
@@ -273,14 +370,31 @@ class DeviceTypeFieldIdView(Resource):
 
 
 class DeviceTypeUtils(Resource):
+    def getActionParamsFields(self, id):
+            params = DeviceActionParam.query.filter_by(action=id).all()
+            action_params = []
+            for param in params:
+                action_param = {
+                    "id": param.id,
+                    "name": param.name,
+                    "param_type": param.param_type,
+                    "order": param.order,
+                    "action": param.action,
+                }
+                action_params.append(action_param)
+            return action_params
+
+
     def getActionsFields(self, id):
         actions = DeviceAction.query.filter_by(device_type=id).all()
         device_actions = []
         for action in actions:
+            action_params = self.getActionParamsFields(action.id)
             device_action = {
                 "id": action.id,
                 "name": action.name,
                 "action_type": action.action_type,
+                "params": action_params
             }
             device_actions.append(device_action)
         fields = DeviceField.query.filter_by(device_type=id).all()

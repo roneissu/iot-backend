@@ -1,7 +1,9 @@
 # pyright: reportOptionalSubscript=false
+import json
 from flask import abort, jsonify, request
 from flask_restx import Namespace, Resource, fields
-from app.database import db, Device, users_devices, User
+from app import mqtt_client
+from app.database import DeviceAction, DeviceActionParam, db, Device, users_devices, User
 from flask_jwt_extended import jwt_required
 
 
@@ -19,8 +21,18 @@ device_model = api.model(
     },
 )
 
+command_param_model = api.model(
+    "CommandParamModel", {
+        "param_id": fields.Integer,
+        "value": fields.String,
+    }
+)
+
 command_model = api.model(
-    "CommandModel", {"type": fields.String, "value": fields.String}
+    "CommandModel", {
+        "command_id": fields.Integer,
+        "params": fields.List(fields.Nested(command_param_model))
+    }
 )
 
 
@@ -115,6 +127,28 @@ class DeviceIdView(Resource):
         return
 
 
+class DeviceUtils():
+    @staticmethod
+    def sortParams(value):
+        return value["order"]
+    
+    @staticmethod
+    def getParamType(param_int):
+        match param_int:
+            case 0:
+                return "string"
+            case 1:
+                return "integer"
+            case 2:
+                return "float"
+            case 3:
+                return "boolean"
+            case 4:
+                return "date"
+            case 5:
+                return "time"
+
+
 @api_command.route("/<int:id>", methods=["POST"])
 class DeviceCommandView(Resource):
     @api.doc(security="Bearer")
@@ -122,9 +156,29 @@ class DeviceCommandView(Resource):
     @api.expect(command_model)
     def post(self, id):
         device = Device.query.filter_by(id=id).first()
+        device_action = DeviceAction.query.filter_by(id=request.json["command_id"]).first()
+
+        params = {}
+        for idx, param in enumerate(request.json["params"]):
+            action_param = DeviceActionParam.query.filter_by(id=param["param_id"]).first()
+            params[idx] = {
+                "name": action_param.name,
+                "type": DeviceUtils.getParamType(action_param.param_type),
+                "value": param["value"]
+            }
+
+        topic = f'medicare/{device.serie_number}/command'
+        command = {
+            "command": device_action.name,
+            "params": params
+        }
+        publish_result = mqtt_client.publish(topic, json.dumps(command, indent=4).encode('utf-8'))
         return jsonify(
             {
                 "result": True,
-                "message": f'Command {request.json["type"]}: {request.json["value"]} sended to {device.alias_name}',
+                "topic": topic,
+                "command": command,
+                "result": publish_result,
+                "message": f'Command sended to {device.alias_name}',
             }
         )
