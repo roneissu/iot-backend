@@ -1,14 +1,16 @@
 from os import environ, urandom
-from flask import Flask
+
+from flask import Flask, jsonify
 from flask_cors import CORS
+from flask_jwt_extended import JWTManager
 from flask_mqtt import Mqtt
 from flask_restx import Api
 from werkzeug.middleware.proxy_fix import ProxyFix
-from flask_jwt_extended import JWTManager
 
 app = Flask(__name__)
 CORS(app, resources={r"*": {"origins": "*"}})
 app.wsgi_app = ProxyFix(app.wsgi_app)
+app.config['PROPAGATE_EXCEPTIONS'] = True
 app.config["JSON_AS_ASCII"] = False
 app.config["SWAGGER_UI_DOC_EXPANSION"] = "list"
 app.secret_key = environ.get("SECRET_KEY") or urandom(24)
@@ -37,14 +39,13 @@ api = Api(
 )
 
 from app.auth import api as auth_ns
-from app.device import api as device_ns, api_command as command_ns
-from app.device_type import (
-    api as device_type_ns,
-    api_action as device_action_ns,
-    api_action_param as device_action_param_ns,
-    api_field as device_field_ns,
-)
 from app.config import api as config_ns
+from app.device import api as device_ns
+from app.device import api_command as command_ns
+from app.device_type import api as device_type_ns
+from app.device_type import api_action as device_action_ns
+from app.device_type import api_action_param as device_action_param_ns
+from app.device_type import api_field as device_field_ns
 from app.user import api as user_ns
 
 api.add_namespace(auth_ns)

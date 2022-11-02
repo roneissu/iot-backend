@@ -1,6 +1,7 @@
 # type: ignore
-from app import app, db_configs
 from flask_sqlalchemy import SQLAlchemy
+
+from app import app, db_configs
 
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config[

@@ -1,11 +1,13 @@
 # pyright: reportOptionalSubscript=false
 import json
-from flask import abort, jsonify, request
-from flask_restx import Namespace, Resource, fields
-from app import mqtt_client
-from app.database import DeviceAction, DeviceActionParam, db, Device, users_devices, User
-from flask_jwt_extended import jwt_required
 
+from flask import abort, jsonify, request
+from flask_jwt_extended import jwt_required
+from flask_restx import Namespace, Resource, fields
+
+from app import mqtt_client
+from app.database import (Device, DeviceAction, DeviceActionParam, User, db,
+                          users_devices)
 
 api = Namespace("device", description="Device CRUD")
 api_command = Namespace("device/command", description="Device CRUD command")

@@ -1,8 +1,8 @@
+# pyright: reportOptionalSubscript=false
 from flask import abort, jsonify, request
-from flask.json import dumps
 from flask_restx import Namespace, Resource, fields
-from app.database import Device, db, Config
 
+from app.database import Config, db
 
 api = Namespace("config", description="Config CRUD")
 

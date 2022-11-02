@@ -1,9 +1,9 @@
 # pyright: reportOptionalSubscript=false
 from flask import abort, jsonify, request
-from flask_restx import Namespace, Resource, fields
-from app.database import db, User
 from flask_jwt_extended import jwt_required
+from flask_restx import Namespace, Resource, fields
 
+from app.database import User, db
 
 api = Namespace('user', description='User CRUD')
 
