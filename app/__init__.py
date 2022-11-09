@@ -1,16 +1,18 @@
+from json import dumps
 from os import environ, urandom
 
-from flask import Flask, jsonify
+from flask import Flask
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from flask_mqtt import Mqtt
 from flask_restx import Api
+from flask_socketio import SocketIO, emit
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 app = Flask(__name__)
 CORS(app, resources={r"*": {"origins": "*"}})
 app.wsgi_app = ProxyFix(app.wsgi_app)
-app.config['PROPAGATE_EXCEPTIONS'] = True
+app.config["PROPAGATE_EXCEPTIONS"] = True
 app.config["JSON_AS_ASCII"] = False
 app.config["SWAGGER_UI_DOC_EXPANSION"] = "list"
 app.secret_key = environ.get("SECRET_KEY") or urandom(24)
@@ -20,7 +22,7 @@ app.config["JWT_TOKEN_LOCATION"] = ["headers"]
 
 authorizations = {"Bearer": {"type": "apiKey", "in": "header", "name": "Authorization"}}
 
-app.config["MQTT_BROKER_URL"] = environ.get("BROKER_URL") or 'localhost'
+app.config["MQTT_BROKER_URL"] = environ.get("BROKER_URL") or "localhost"
 app.config["MQTT_BROKER_PORT"] = int(environ.get("BROKER_PORT") or 1883)
 app.config["MQTT_TLS_ENABLED"] = (environ.get("BROKER_TLS_ENABLED") == True) or False
 app.config["MQTT_KEEPALIVE"] = 5
@@ -29,13 +31,15 @@ jwt = JWTManager(app)
 
 mqtt_client = Mqtt(app)
 
+socketio = SocketIO(app, cors_allowed_origins="*")
+
 api = Api(
     app,
     title="iot-backend",
     version="0.1",
     description="Projeto de TCC de Ronaldo Santos",
     authorizations=authorizations,
-    security="apiKey"
+    security="apiKey",
 )
 
 from app.auth import api as auth_ns
@@ -59,5 +63,11 @@ api.add_namespace(config_ns)
 api.add_namespace(user_ns)
 
 
+@socketio.on("message")
+def handle_message(data):
+    print("received message: " + dumps(data))
+    socketio.emit("message", {"test": 123})
+
+
 if __name__ == "__main__":
-    app.run(debug=True)
+    socketio.run(app, debug=True)

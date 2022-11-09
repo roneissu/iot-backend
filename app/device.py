@@ -1,11 +1,12 @@
 # pyright: reportOptionalSubscript=false
 import json
+from random import random
 
 from flask import abort, jsonify, request
 from flask_jwt_extended import jwt_required
 from flask_restx import Namespace, Resource, fields
 
-from app import mqtt_client
+from app import mqtt_client, socketio
 from app.database import (Device, DeviceAction, DeviceActionParam, User, db,
                           users_devices)
 
@@ -175,6 +176,7 @@ class DeviceCommandView(Resource):
             "params": params
         }
         publish_result = mqtt_client.publish(topic, json.dumps(command, indent=4).encode('utf-8'))
+        socketio.emit("values", { 'msg': { 'serie_number': device.serie_number, 'name': 'campo 1', 'value': format(random()*10,".2f") } })
         return jsonify(
             {
                 "result": True,
