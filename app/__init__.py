@@ -1,4 +1,5 @@
 from json import dumps
+import json
 from os import environ, urandom
 
 from flask import Flask
@@ -42,6 +43,11 @@ api = Api(
     security="apiKey",
 )
 
+BASE_TOPIC = "medicare/"
+COMMAND_TOPIC = BASE_TOPIC + "command/"
+COMMAND_RES_TOPIC = BASE_TOPIC + "commandresult/"
+VALUES_TOPIC = BASE_TOPIC + "values/"
+
 from app.auth import api as auth_ns
 from app.config import api as config_ns
 from app.device import api as device_ns
@@ -61,6 +67,36 @@ api.add_namespace(device_action_param_ns)
 api.add_namespace(device_field_ns)
 api.add_namespace(config_ns)
 api.add_namespace(user_ns)
+
+
+@mqtt_client.on_connect()
+def handle_connect(client, userdata, flags, rc):
+    if rc == 0:
+        print("Connected!")
+        mqtt_client.subscribe(BASE_TOPIC + "#")
+        print("subscribed")
+    else:
+        print('Error in connection', rc)
+
+
+@mqtt_client.on_topic(COMMAND_RES_TOPIC + "+")
+def handle_mqtt_command_res(client, userdata, message):
+    data = dict(
+        topic=message.topic,
+        payload=message.payload.decode()
+    )
+
+
+@mqtt_client.on_topic(VALUES_TOPIC + "+")
+def handle_mqtt_values(client, userdata, message):
+    serie_number = str(message.topic).split(VALUES_TOPIC)[1]
+    for key, field in (dict)(json.loads(message.payload.decode())).items():
+        message = { 'msg': { 'serie_number': serie_number, 'name': key, 'value': field } }
+        socketio.emit("values", message)
+        print('Sended: ', json.dumps(message))
+
+
+mqtt_client._connect()
 
 
 @socketio.on("message")

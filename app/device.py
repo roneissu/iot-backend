@@ -1,14 +1,18 @@
 # pyright: reportOptionalSubscript=false
+from datetime import datetime
 import json
-from random import random
+from random import random, seed
 
 from flask import abort, jsonify, request
 from flask_jwt_extended import jwt_required
 from flask_restx import Namespace, Resource, fields
 
-from app import mqtt_client, socketio
+from app import COMMAND_TOPIC, mqtt_client, socketio
 from app.database import (Device, DeviceAction, DeviceActionParam, User, db,
                           users_devices)
+
+
+seed(datetime.now().timestamp())
 
 api = Namespace("device", description="Device CRUD")
 api_command = Namespace("device/command", description="Device CRUD command")
@@ -161,20 +165,16 @@ class DeviceCommandView(Resource):
         device = Device.query.filter_by(id=id).first()
         device_action = DeviceAction.query.filter_by(id=request.json["command_id"]).first()
 
-        params = {}
-        for idx, param in enumerate(request.json["params"]):
-            action_param = DeviceActionParam.query.filter_by(id=param["param_id"]).first()
-            params[idx] = {
-                "name": action_param.name,
-                "type": DeviceUtils.getParamType(action_param.param_type),
-                "value": param["value"]
-            }
+        topic = f'{COMMAND_TOPIC}{device.serie_number}'
 
-        topic = f'medicare/{device.serie_number}/command'
         command = {
-            "command": device_action.name,
-            "params": params
+            "hash": str(int(random()*10e15)),
+            "command": device_action.action_type
         }
+        for param in request.json["params"]:
+            action_param = DeviceActionParam.query.filter_by(id=param["param_id"]).first()
+            command[action_param.name] = param["value"]
+
         publish_result = mqtt_client.publish(topic, json.dumps(command, indent=4).encode('utf-8'))
         socketio.emit("values", { 'msg': { 'serie_number': device.serie_number, 'name': 'campo 1', 'value': format(random()*10,".2f") } })
         return jsonify(
