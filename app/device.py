@@ -138,22 +138,6 @@ class DeviceUtils():
     @staticmethod
     def sortParams(value):
         return value["order"]
-    
-    @staticmethod
-    def getParamType(param_int):
-        match param_int:
-            case 0:
-                return "string"
-            case 1:
-                return "integer"
-            case 2:
-                return "float"
-            case 3:
-                return "boolean"
-            case 4:
-                return "date"
-            case 5:
-                return "time"
 
 
 @api_command.route("/<int:id>", methods=["POST"])
@@ -169,7 +153,7 @@ class DeviceCommandView(Resource):
 
         command = {
             "hash": str(int(random()*10e15)),
-            "command": device_action.action_type
+            "command": device_action.function
         }
         for param in request.json["params"]:
             action_param = DeviceActionParam.query.filter_by(id=param["param_id"]).first()

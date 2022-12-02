@@ -19,8 +19,7 @@ device_action_param_model = api.model(
     {
         "id": fields.Integer,
         "name": fields.String,
-        "param_type": fields.Integer,
-        "order": fields.Integer,
+        "param_type": fields.String,
         "action": fields.Integer,
     },
 )
@@ -30,7 +29,7 @@ device_action_model = api.model(
     {
         "id": fields.Integer,
         "name": fields.String,
-        "action_type": fields.String,
+        "function": fields.String,
         "params": fields.List(fields.Nested(device_action_param_model)),
         "device_type": fields.Integer,
     },
@@ -41,6 +40,7 @@ device_field_model = api.model(
     {
         "id": fields.Integer,
         "name": fields.String,
+        "unit": fields.String,
         "field_type": fields.String,
         "device_type": fields.Integer,
     },
@@ -168,7 +168,7 @@ class DeviceTypeActionView(Resource):
             {
                 "id": device_action.id,
                 "name": device_action.name,
-                "action_type": device_action.action_type,
+                "function": device_action.function,
                 "device_type": device_action.device_type,
                 "params": action_params,
             }
@@ -188,7 +188,7 @@ class DeviceTypeActionIdView(Resource):
             {
                 "id": device_action.id,
                 "name": device_action.name,
-                "action_type": device_action.action_type,
+                "function": device_action.function,
                 "device_type": device_action.device_type,
                 "params": action_params,
             }
@@ -209,7 +209,7 @@ class DeviceTypeActionIdView(Resource):
             {
                 "id": device_action.id,
                 "name": device_action.name,
-                "action_type": device_action.action_type,
+                "function": device_action.function,
                 "device_type": device_action.device_type,
                 "params": action_params,
             }
@@ -242,8 +242,7 @@ class DeviceTypeActionParamView(Resource):
             {
                 "id": action_param.id,
                 "name": action_param.name,
-                "param_type": DeviceUtils.getParamType(action_param.param_type),
-                "order": action_param.order,
+                "param_type": action_param.param_type,
                 "action": action_param.action,
             }
         )
@@ -261,8 +260,7 @@ class DeviceTypeActionParamIdView(Resource):
             {
                 "id": action_param.id,
                 "name": action_param.name,
-                "param_type": DeviceUtils.getParamType(action_param.param_type),
-                "order": action_param.order,
+                "param_type": action_param.param_type,
                 "action": action_param.action,
             }
         )
@@ -281,8 +279,7 @@ class DeviceTypeActionParamIdView(Resource):
             {
                 "id": action_param.id,
                 "name": action_param.name,
-                "param_type": DeviceUtils.getParamType(action_param.param_type),
-                "order": action_param.order,
+                "param_type": action_param.param_type,
                 "action": action_param.action,
             }
         )
@@ -316,6 +313,7 @@ class DeviceTypeFieldView(Resource):
             {
                 "id": device_field.id,
                 "name": device_field.name,
+                "unit": device_field.unit,
                 "field_type": device_field.field_type,
                 "device_type": device_field.device_type,
             }
@@ -334,6 +332,7 @@ class DeviceTypeFieldIdView(Resource):
             {
                 "id": device_field.id,
                 "name": device_field.name,
+                "unit": device_field.unit,
                 "field_type": device_field.field_type,
                 "device_type": device_field.device_type,
             }
@@ -353,6 +352,7 @@ class DeviceTypeFieldIdView(Resource):
             {
                 "id": device_field.id,
                 "name": device_field.name,
+                "unit": device_field.unit,
                 "field_type": device_field.field_type,
                 "device_type": device_field.device_type,
             }
@@ -377,8 +377,7 @@ class DeviceTypeUtils(Resource):
             action_param = {
                 "id": param.id,
                 "name": param.name,
-                "param_type": DeviceUtils.getParamType(param.param_type),
-                "order": param.order,
+                "param_type": param.param_type,
                 "action": param.action,
             }
             action_params.append(action_param)
@@ -392,7 +391,7 @@ class DeviceTypeUtils(Resource):
             device_action = {
                 "id": action.id,
                 "name": action.name,
-                "action_type": action.action_type,
+                "function": action.function,
                 "params": action_params,
             }
             device_actions.append(device_action)
@@ -402,6 +401,7 @@ class DeviceTypeUtils(Resource):
             device_field = {
                 "id": field.id,
                 "name": field.name,
+                "unit": field.unit,
                 "field_type": field.field_type,
             }
             device_fields.append(device_field)

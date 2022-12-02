@@ -90,10 +90,11 @@ def handle_mqtt_command_res(client, userdata, message):
 @mqtt_client.on_topic(VALUES_TOPIC + "+")
 def handle_mqtt_values(client, userdata, message):
     serie_number = str(message.topic).split(VALUES_TOPIC)[1]
-    for key, field in (dict)(json.loads(message.payload.decode())).items():
-        message = { 'msg': { 'serie_number': serie_number, 'name': key, 'value': field } }
-        socketio.emit("values", message)
-        print('Sended: ', json.dumps(message))
+    if not message.payload.decode().__eq__('Connected'):
+        for key, field in (dict)(json.loads(message.payload.decode())).items():
+            message = { 'msg': { 'serie_number': serie_number, 'name': key, 'value': field } }
+            socketio.emit("values", message)
+            print('Sended: ', json.dumps(message))
 
 
 mqtt_client._connect()

@@ -92,6 +92,7 @@ class DeviceField(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50), nullable=False)
     field_type = db.Column(db.String(20), nullable=False)
+    unit = db.Column(db.String(20))
     device_type = db.Column(db.Integer, db.ForeignKey("device_type.id"), nullable=False)
 
     def columns(self):
@@ -107,7 +108,7 @@ class DeviceField(db.Model):
 class DeviceAction(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50), nullable=False)
-    action_type = db.Column(db.String(20), nullable=False)
+    function = db.Column(db.String(20), nullable=False)
     device_type = db.Column(db.Integer, db.ForeignKey("device_type.id"), nullable=False)
 
     def columns(self):
@@ -120,17 +121,10 @@ class DeviceAction(db.Model):
         return "<DeviceAction %r>" % self.username
 
 
-# string = 0
-# int = 1
-# float = 2
-# bool = 3
-# date = 4
-# time = 5
 class DeviceActionParam(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50), nullable=False)
-    param_type = db.Column(db.Integer, nullable=False)
-    order = db.Column(db.Integer, nullable=False)
+    param_type = db.Column(db.String(20), nullable=False)
     action = db.Column(db.Integer, db.ForeignKey("device_action.id"), nullable=False)
 
     def columns(self):
