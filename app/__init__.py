@@ -48,6 +48,8 @@ COMMAND_TOPIC = BASE_TOPIC + "command/"
 COMMAND_RES_TOPIC = BASE_TOPIC + "commandresult/"
 VALUES_TOPIC = BASE_TOPIC + "values/"
 
+commands_awaiting = dict()
+
 from app.auth import api as auth_ns
 from app.config import api as config_ns
 from app.device import api as device_ns
@@ -81,10 +83,12 @@ def handle_connect(client, userdata, flags, rc):
 
 @mqtt_client.on_topic(COMMAND_RES_TOPIC + "+")
 def handle_mqtt_command_res(client, userdata, message):
-    data = dict(
-        topic=message.topic,
-        payload=message.payload.decode()
-    )
+    serie_number = str(message.topic).split(COMMAND_RES_TOPIC)[1]
+    message_val = json.loads(message.payload.decode())
+    if message_val['hash'] in commands_awaiting:
+        command_res = commands_awaiting[message_val['hash']]
+        socketio.emit("command", { 'command': command_res, 'serie_number': serie_number, 'result': message_val['result'] })
+        del commands_awaiting[message_val['hash']]
 
 
 @mqtt_client.on_topic(VALUES_TOPIC + "+")

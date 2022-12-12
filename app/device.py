@@ -7,7 +7,7 @@ from flask import abort, jsonify, request
 from flask_jwt_extended import jwt_required
 from flask_restx import Namespace, Resource, fields
 
-from app import COMMAND_TOPIC, mqtt_client, socketio
+from app import COMMAND_TOPIC, mqtt_client, commands_awaiting
 from app.database import (Device, DeviceAction, DeviceActionParam, User, db,
                           users_devices)
 
@@ -159,14 +159,15 @@ class DeviceCommandView(Resource):
             action_param = DeviceActionParam.query.filter_by(id=param["param_id"]).first()
             command[action_param.name] = param["value"]
 
+        commands_awaiting[command["hash"]] = device_action.function
+
         publish_result = mqtt_client.publish(topic, json.dumps(command, indent=4).encode('utf-8'))
-        socketio.emit("values", { 'msg': { 'serie_number': device.serie_number, 'name': 'campo 1', 'value': format(random()*10,".2f") } })
         return jsonify(
             {
                 "result": True,
                 "topic": topic,
                 "command": command,
                 "result": publish_result,
-                "message": f'Command sended to {device.alias_name}',
+                "message": f'Comando {device_action.name} enviado ao dispositivo {device.alias_name}',
             }
         )
